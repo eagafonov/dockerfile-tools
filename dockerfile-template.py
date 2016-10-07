@@ -30,6 +30,11 @@ parser.add_argument('--requirements', dest='requirements_file', action='store', 
 parser.add_argument('--output', dest='output', action='store', default='Dockerfile',
                    help="Destination filename")
 
+# flasgs
+parser.add_argument('--skip-dev', dest='skip_dev', action='store_const', const=True, default=False,
+                   help="Skip development packages from requirements")
+
+
 
 args = parser.parse_args()
 
@@ -44,9 +49,16 @@ req_file = open(args.requirements_file, 'r')
 def stip_line(l):
     return l.translate(None, '\r\n')
 
+def skip_line(l):
+    if args.skip_dev:
+        if l[:2] == '-e':
+            print "Skip development: ", l
+            return True
+    return False
+
 vars = {
     'requirements_filename': args.requirements_file,
-    'deps': ' \\\n'.join([stip_line(r) for r in req_file if r[0] != '#' and len(stip_line(r)) > 0])
+    'deps': ' \\\n'.join([stip_line(r) for r in req_file if r[0] != '#' and len(stip_line(r)) > 0 and not skip_line(stip_line(r))])
     }
 
 o = open(args.output, 'w')
